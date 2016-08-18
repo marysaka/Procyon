@@ -45,6 +45,7 @@ allprojects {
     buildDir = rootDir.canonicalPath + "/build/" + rootProject.relativePath(projectDir.canonicalPath)
 
     version procyonVersion
+    if (System.env.BUILD_NUMBER != null) version = "$version.$System.env.BUILD_NUMBER"
 
     group 'org.bitbucket.mstrobel'
     sourceCompatibility = 1.7    // JDK version
