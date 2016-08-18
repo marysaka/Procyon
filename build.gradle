@@ -1,5 +1,9 @@
 import org.gradle.api.artifacts.maven.MavenDeployment
 
+plugins {
+    id "com.jfrog.artifactory" version "4.4.0"
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'idea'
@@ -33,6 +37,7 @@ def results = [];
 final def procyonVersion = getProcyonVersion()
 
 allprojects {
+    apply plugin: 'com.jfrog.artifactory'
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'maven'
@@ -52,6 +57,8 @@ allprojects {
         testCompile 'junit:junit:4.11'
     }
 }
+
+artifactoryPublish.skip = true
 
 //
 // The root project is empty and doesn't need any tasks.
@@ -79,9 +86,10 @@ subprojects {
         classifier = 'sources'
         from sourceSets.main.allSource
     }
-    print(it.name)
 
+    artifactoryPublish.skip = true
     if (project.name != "Procyon.Decompiler") {
+        artifactoryPublish.skip = false
         javadoc {
             options.encoding = 'UTF-8'
         }
@@ -165,7 +173,4 @@ subprojects {
             }
         }
     }
-}
-results.each {
-    artifacts.add("archives", it);
 }
