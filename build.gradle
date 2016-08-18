@@ -29,6 +29,7 @@ ext.getProcyonVersion = { ->
     return fallbackVersion
 }
 
+def results = [];
 final def procyonVersion = getProcyonVersion()
 
 allprojects {
@@ -78,11 +79,16 @@ subprojects {
         classifier = 'sources'
         from sourceSets.main.allSource
     }
+    print(it.name)
 
     if (project.name != "Procyon.Decompiler") {
         javadoc {
             options.encoding = 'UTF-8'
         }
+
+        results += jar;
+        results += javadocJar;
+        results += sourcesJar;
 
         artifacts {
             archives jar
@@ -160,4 +166,6 @@ subprojects {
         }
     }
 }
-
+results.each {
+    artifacts.add("archives", it);
+}
