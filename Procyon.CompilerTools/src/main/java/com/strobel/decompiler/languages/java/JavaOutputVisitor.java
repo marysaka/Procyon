@@ -217,22 +217,36 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
         lastWritten = LastWritten.Other;
     }
 
-    void writeIdentifier(final String identifier) {
-        writeIdentifier(identifier, null);
+    void writeIdentifier(final Identifier identifier, final String text) {
+        // for now, set the start location to *here*
+        identifier.setStartLocation(new TextLocation(output.getRow(), output.getColumn()));
+        boolean wroteSpace = writeIdentifier(text);
+        if (wroteSpace) {
+            // shift the start position over by one
+            identifier.setStartLocation(new TextLocation(identifier.getStartLocation().line(), identifier.getStartLocation().column() + 1));
+        }
     }
 
-    void writeIdentifier(final String identifier, final Role<Identifier> identifierRole) {
+    boolean writeIdentifier(final String identifier) {
+        return writeIdentifier(identifier, null);
+    }
+
+    boolean writeIdentifier(final String identifier, final Role<Identifier> identifierRole) {
         writeSpecialsUpToRole(identifierRole != null ? identifierRole : Roles.IDENTIFIER);
+
+        boolean wroteSpace = false;
 
         if (isKeyword(identifier, containerStack.peek())) {
             if (lastWritten == LastWritten.KeywordOrIdentifier) {
                 space();
+                wroteSpace = true;
             }
             // this space is not strictly required, so we call space()
 //            formatter.writeToken("$");
         }
         else if (lastWritten == LastWritten.KeywordOrIdentifier) {
             formatter.space();
+            wroteSpace = true;
             // this space is strictly required, so we directly call the formatter
         }
 
@@ -244,6 +258,8 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
         }
 
         lastWritten = LastWritten.KeywordOrIdentifier;
+
+        return wroteSpace;
     }
 
     void writeToken(final TokenRole tokenRole) {
