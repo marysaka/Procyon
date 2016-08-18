@@ -10,15 +10,16 @@ apply plugin: 'idea'
 
 archivesBaseName = 'procyon'
 
-ext.getProcyonVersion = { ->
-    final def fallbackVersion = "1.0-SNAPSHOT";
+def getProcyonProperty(def propertyName, def fallback)
+{
     final def versionFilePath = rootDir.canonicalPath + "/Procyon.Core/src/main/java/com/strobel/Procyon.java";
     final def versionFile = new File(versionFilePath);
 
     if (versionFile.exists()) {
         try {
             final def String fileContents = new File(versionFilePath).getText('UTF-8')
-            final def matcher = fileContents =~ /VERSION\s*=\s*"([^"]+)"/
+            final def matcher = fileContents =~ propertyName + "\\s*=\\s*\"([^\"]+)\""
+            println(matcher)
 
             if (matcher.find()) {
                 return matcher.group(1).trim()
@@ -28,13 +29,13 @@ ext.getProcyonVersion = { ->
         }
     }
 
-    logger.warn("wARNING: Could not resolve version from source; falling back to '$fallbackVersion'.")
+    logger.warn("wARNING: Could not resolve variable from source; falling back to '$fallback'.")
 
     return fallbackVersion
 }
 
-def results = [];
-final def procyonVersion = getProcyonVersion()
+final def procyonVersion = getProcyonProperty("VERSION", "1.0-SNAPSHOT")
+final def procyonVersionSuffix = getProcyonProperty("VERSION_SUFFIX", null);
 
 allprojects {
     apply plugin: 'com.jfrog.artifactory'
@@ -46,6 +47,7 @@ allprojects {
 
     version procyonVersion
     if (System.env.BUILD_NUMBER != null) version = "$version.$System.env.BUILD_NUMBER"
+    if (procyonVersionSuffix != null) version = "$version-$procyonVersionSuffix";
 
     group 'org.bitbucket.mstrobel'
     sourceCompatibility = 1.7    // JDK version
@@ -94,10 +96,6 @@ subprojects {
         javadoc {
             options.encoding = 'UTF-8'
         }
-
-        results += jar;
-        results += javadocJar;
-        results += sourcesJar;
 
         artifacts {
             archives jar
