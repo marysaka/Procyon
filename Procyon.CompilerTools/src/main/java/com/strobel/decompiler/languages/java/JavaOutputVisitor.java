@@ -242,7 +242,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
                 wroteSpace = true;
             }
             // this space is not strictly required, so we call space()
-//            formatter.writeToken("$");
+            // formatter.writeToken("$");
         }
         else if (lastWritten == LastWritten.KeywordOrIdentifier) {
             formatter.space();
@@ -833,16 +833,15 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
         }
 
         writeTypeArguments(node.getTypeArguments());
-        writeIdentifier(node.getMemberName());
+        writeIdentifier(node.getMemberNameToken(), node.getMemberName());
         endNode(node);
         return null;
     }
 
     @Override
     public Void visitIdentifier(final Identifier node, final Void ignored) {
-        node.setStartLocation(new TextLocation(output.getRow(), output.getColumn()));
         startNode(node);
-        writeIdentifier(node.getName());
+        writeIdentifier(node, node.getName());
         endNode(node);
         return null;
     }
@@ -1348,7 +1347,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             writeKeyword(typeReference.getSimpleName());
         }
         else {
-            writeIdentifier(node.getIdentifier());
+            writeIdentifier(node.getIdentifierToken(), node.getIdentifier());
         }
 
         writeTypeArguments(node.getTypeArguments());
@@ -1460,7 +1459,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
         }
 
         startNode(node.getNameToken());
-        writeIdentifier(type != null ? type.getName() : node.getName());
+        writeIdentifier(node.getNameToken(), type != null ? type.getName() : node.getName());
         endNode(node.getNameToken());
         space(policy.SpaceBeforeConstructorDeclarationParentheses);
         writeCommaSeparatedListInParenthesis(node.getParameters(), policy.SpaceWithinMethodDeclarationParentheses);
@@ -2075,7 +2074,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     @Override
     public Void visitIdentifierExpression(final IdentifierExpression node, final Void ignored) {
         startNode(node);
-        writeIdentifier(node.getIdentifier());
+        writeIdentifier(node.getIdentifierToken(), node.getIdentifier());
         writeTypeArguments(node.getTypeArguments());
         endNode(node);
         return null;
@@ -2260,7 +2259,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     public Void visitEnumValueDeclaration(final EnumValueDeclaration node, final Void ignored) {
         startNode(node);
         writeAnnotations(node.getAnnotations(), true);
-        writeIdentifier(node.getName());
+        writeIdentifier(node.getNameToken(), node.getName());
 
         final AstNodeCollection<Expression> arguments = node.getArguments();
 
