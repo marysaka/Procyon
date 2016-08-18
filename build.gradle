@@ -43,6 +43,7 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'maven'
 
+    compileJava.options.encoding = 'UTF-8'
     buildDir = rootDir.canonicalPath + "/build/" + rootProject.relativePath(projectDir.canonicalPath)
 
     version procyonVersion
