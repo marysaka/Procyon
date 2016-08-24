@@ -69,6 +69,7 @@ public final class Roles {
     public final static TokenRole SEMICOLON = new TokenRole(";", TokenRole.FLAG_DELIMITER);
     public final static TokenRole COLON = new TokenRole(":", TokenRole.FLAG_DELIMITER);
     public final static TokenRole DOUBLE_COLON = new TokenRole("::", TokenRole.FLAG_DELIMITER);
+    public final static TokenRole AMPERSAND  = new TokenRole("&", TokenRole.FLAG_DELIMITER);
     public final static TokenRole ASSIGN = new TokenRole("=", TokenRole.FLAG_OPERATOR);
     public final static TokenRole PIPE = new TokenRole("|", TokenRole.FLAG_OPERATOR);
     public final static TokenRole VARARGS = new TokenRole("...", TokenRole.FLAG_DELIMITER);

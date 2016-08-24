@@ -19,13 +19,7 @@ package com.strobel.decompiler.languages.java;
 import com.strobel.assembler.ir.attributes.AttributeNames;
 import com.strobel.assembler.ir.attributes.LineNumberTableAttribute;
 import com.strobel.assembler.ir.attributes.SourceAttribute;
-import com.strobel.assembler.metadata.FieldDefinition;
-import com.strobel.assembler.metadata.Flags;
-import com.strobel.assembler.metadata.MethodDefinition;
-import com.strobel.assembler.metadata.MethodReference;
-import com.strobel.assembler.metadata.ParameterDefinition;
-import com.strobel.assembler.metadata.TypeDefinition;
-import com.strobel.assembler.metadata.TypeReference;
+import com.strobel.assembler.metadata.*;
 import com.strobel.core.ArrayUtilities;
 import com.strobel.core.StringUtilities;
 import com.strobel.core.VerifyArgument;
@@ -35,6 +29,7 @@ import com.strobel.decompiler.languages.LineNumberPosition;
 import com.strobel.decompiler.languages.TextLocation;
 import com.strobel.decompiler.languages.java.TextOutputFormatter.LineNumberMode;
 import com.strobel.decompiler.languages.java.ast.*;
+import com.strobel.decompiler.languages.java.ast.WildcardType;
 import com.strobel.decompiler.languages.java.utilities.TypeUtilities;
 import com.strobel.decompiler.patterns.*;
 import com.strobel.util.ContractUtils;
@@ -375,6 +370,10 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     }
 
     private void writeCommaSeparatedList(final Iterable<? extends AstNode> list) {
+        writeCommaSeparatedList(list, false);
+    }
+
+    private void writeCommaSeparatedList(final Iterable<? extends AstNode> list, boolean isGeneric) {
         boolean isFirst = true;
         for (final AstNode node : list) {
             if (isFirst) {
@@ -383,7 +382,10 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             else {
                 comma(node);
             }
-            node.acceptVisitor(this, null);
+            if (isGeneric)
+                processTypeParameterDeclaration((TypeParameterDeclaration)node, null, isGeneric);
+            else
+                node.acceptVisitor(this, null);
         }
     }
 
@@ -440,9 +442,13 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     }
 
     public void writeTypeParameters(final Iterable<TypeParameterDeclaration> typeParameters) {
+        writeTypeParameters(typeParameters, false);
+    }
+
+    public void writeTypeParameters(final Iterable<TypeParameterDeclaration> typeParameters, boolean isGeneric) {
         if (any(typeParameters)) {
             writeToken(Roles.LEFT_CHEVRON);
-            writeCommaSeparatedList(typeParameters);
+            writeCommaSeparatedList(typeParameters, isGeneric);
             writeToken(Roles.RIGHT_CHEVRON);
         }
     }
@@ -1487,6 +1493,12 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
 
     @Override
     public Void visitTypeParameterDeclaration(final TypeParameterDeclaration node, final Void ignored) {
+
+        return processTypeParameterDeclaration(node, ignored, false);
+    }
+
+    private Void processTypeParameterDeclaration(TypeParameterDeclaration node, Void ignored, boolean isGeneric)
+    {
         startNode(node);
         writeAnnotations(node.getAnnotations(), false);
         node.getNameToken().acceptVisitor(this, ignored);
@@ -1495,11 +1507,49 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
 
         if (extendsBound != null && !extendsBound.isNull()) {
             writeKeyword(Roles.EXTENDS_KEYWORD);
-            extendsBound.acceptVisitor(this, ignored);
+
+            final TypeReference typeReference = extendsBound.getUserData(Keys.TYPE_REFERENCE);
+            if (typeReference != null && typeReference instanceof CompoundTypeReference && isGeneric && !((CompoundTypeReference) typeReference).getInterfaces().isEmpty())
+            {
+                CompoundTypeReference reference = (CompoundTypeReference) typeReference;
+                writeCompoundType(reference);
+            }
+            else
+                extendsBound.acceptVisitor(this, ignored);
         }
 
         endNode(node);
         return null;
+    }
+
+    private void writeCompoundType(CompoundTypeReference reference)
+    {
+        TypeReference baseType = reference.getBaseType();
+        List<TypeReference> interfaces = reference.getInterfaces();
+        SimpleType type;
+        if (baseType != null) {
+            type = new SimpleType(baseType.toString());
+            startNode(type);
+            writeIdentifier(type.getIdentifierToken(), type.getIdentifier());
+            endNode(type);
+            if (!interfaces.isEmpty()) {
+                space();
+                writeToken(Roles.AMPERSAND);
+                space();
+            }
+        }
+
+        for (int i = 0, n = interfaces.size(); i < n; i++) {
+            if (i != 0) {
+                space();
+                formatter.writeDelimiter("&");
+                space();
+            }
+            type = new SimpleType(interfaces.get(i).toString());
+            startNode(type);
+            writeIdentifier(type.getIdentifierToken(), type.getIdentifier());
+            endNode(type);
+        }
     }
 
     @Override
@@ -1586,7 +1636,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             }
 
             node.getNameToken().acceptVisitor(this, ignored);
-            writeTypeParameters(node.getTypeParameters());
+            writeTypeParameters(node.getTypeParameters(), true);
 
             if (!node.getBaseType().isNull()) {
                 space();
