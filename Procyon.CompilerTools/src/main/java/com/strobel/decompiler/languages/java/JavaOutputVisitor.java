@@ -34,11 +34,7 @@ import com.strobel.decompiler.languages.java.utilities.TypeUtilities;
 import com.strobel.decompiler.patterns.*;
 import com.strobel.util.ContractUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 import static com.strobel.core.CollectionUtilities.*;
 import static java.lang.String.format;
@@ -370,10 +366,6 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     }
 
     private void writeCommaSeparatedList(final Iterable<? extends AstNode> list) {
-        writeCommaSeparatedList(list, false);
-    }
-
-    private void writeCommaSeparatedList(final Iterable<? extends AstNode> list, boolean isGeneric) {
         boolean isFirst = true;
         for (final AstNode node : list) {
             if (isFirst) {
@@ -382,10 +374,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             else {
                 comma(node);
             }
-            if (isGeneric)
-                processTypeParameterDeclaration((TypeParameterDeclaration)node, null, isGeneric);
-            else
-                node.acceptVisitor(this, null);
+            node.acceptVisitor(this, null);
         }
     }
 
@@ -442,13 +431,9 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     }
 
     public void writeTypeParameters(final Iterable<TypeParameterDeclaration> typeParameters) {
-        writeTypeParameters(typeParameters, false);
-    }
-
-    public void writeTypeParameters(final Iterable<TypeParameterDeclaration> typeParameters, boolean isGeneric) {
         if (any(typeParameters)) {
             writeToken(Roles.LEFT_CHEVRON);
-            writeCommaSeparatedList(typeParameters, isGeneric);
+            writeCommaSeparatedList(typeParameters);
             writeToken(Roles.RIGHT_CHEVRON);
         }
     }
@@ -1494,10 +1479,10 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     @Override
     public Void visitTypeParameterDeclaration(final TypeParameterDeclaration node, final Void ignored) {
 
-        return processTypeParameterDeclaration(node, ignored, false);
+        return processTypeParameterDeclaration(node, ignored);
     }
 
-    private Void processTypeParameterDeclaration(TypeParameterDeclaration node, Void ignored, boolean isGeneric)
+    private Void processTypeParameterDeclaration(TypeParameterDeclaration node, Void ignored)
     {
         startNode(node);
         writeAnnotations(node.getAnnotations(), false);
@@ -1509,7 +1494,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             writeKeyword(Roles.EXTENDS_KEYWORD);
 
             final TypeReference typeReference = extendsBound.getUserData(Keys.TYPE_REFERENCE);
-            if (typeReference != null && typeReference instanceof CompoundTypeReference && isGeneric && !((CompoundTypeReference) typeReference).getInterfaces().isEmpty())
+            if (typeReference != null && typeReference instanceof CompoundTypeReference)
             {
                 CompoundTypeReference reference = (CompoundTypeReference) typeReference;
                 writeCompoundType(reference);
@@ -1636,7 +1621,7 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
             }
 
             node.getNameToken().acceptVisitor(this, ignored);
-            writeTypeParameters(node.getTypeParameters(), true);
+            writeTypeParameters(node.getTypeParameters());
 
             if (!node.getBaseType().isNull()) {
                 space();
